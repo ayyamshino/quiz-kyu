@@ -18,7 +18,6 @@ const KyuQuiz: React.FC = () => {
     bestStreak: 0
   });
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate random wrong answers
@@ -106,16 +105,6 @@ const KyuQuiz: React.FC = () => {
     };
   }, [isRunning, timeLeft, duration, showResult]);
 
-  // Auto-advance to next question after showing result
-  useEffect(() => {
-    if (showResult && isRunning) {
-      const timeout = setTimeout(() => {
-        nextQuestion();
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [showResult, isRunning]);
-
   const updateStats = (correct: boolean) => {
     setStats(prev => {
       const newStats = {
@@ -127,6 +116,25 @@ const KyuQuiz: React.FC = () => {
       return newStats;
     });
   };
+
+  const nextQuestion = useCallback(() => {
+    const newQuestion = generateQuestion(currentQuestion?.correctGrade);
+    setCurrentQuestion(newQuestion);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setTimeLeft(duration);
+    setProgress(100);
+  }, [generateQuestion, currentQuestion?.correctGrade, duration]);
+
+  // Auto-advance to next question after showing result
+  useEffect(() => {
+    if (showResult && isRunning) {
+      const timeout = setTimeout(() => {
+        nextQuestion();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [showResult, isRunning, nextQuestion]);
 
   const handleAnswerSelect = (answer: string) => {
     if (showResult || !currentQuestion) return;
@@ -140,15 +148,6 @@ const KyuQuiz: React.FC = () => {
     if (isRunning) {
       setIsRunning(false);
     }
-  };
-
-  const nextQuestion = () => {
-    const newQuestion = generateQuestion(currentQuestion?.correctGrade);
-    setCurrentQuestion(newQuestion);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setTimeLeft(duration);
-    setProgress(100);
   };
 
   const handlePlay = () => {
